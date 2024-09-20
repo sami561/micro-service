@@ -1,7 +1,14 @@
 package com.sami.customer.customer;
 
+import com.sami.customer.exception.CustomerNotFoundeException;
 import lombok.RequiredArgsConstructor;
+import org.apache.commons.lang.StringUtils;
 import org.springframework.stereotype.Service;
+
+import java.util.List;
+import java.util.stream.Collectors;
+
+import static java.lang.String.format;
 
 @Service
 @RequiredArgsConstructor
@@ -11,5 +18,44 @@ public class CustomerService {
     public String createCustomer(CustomerRequest request) {
         var  customer = repository.save(mapper.toCustomer(request));
         return customer.getId();
+    }
+
+    public void updateCustomer(CustomerRequest request) {
+        var customer =repository.findById(request.id()).orElseThrow(()->new CustomerNotFoundeException(
+                format("Cannot update customer :: No  customer found with the provded ID %s",request.id())
+        ));
+        mergerCustomer( customer,request);
+        repository.save(customer);
+    }
+
+    private void mergerCustomer(Customer customer, CustomerRequest request) {
+        if(StringUtils.isNotBlank(request.firstname())){
+            customer.setFirstname(request.firstname());
+        }
+        if(StringUtils.isNotBlank(request.lastname())){
+            customer.setFirstname(request.lastname());
+        }
+        if(StringUtils.isNotBlank(request.email())){
+            customer.setFirstname(request.email());
+        }
+        if(request.address() != null){
+            customer.setAddress(request.address());
+        }
+    }
+
+    public List<CustomerResponse> findAllCustomers() {
+        return  repository.findAll().stream().map(mapper::fromCustomer).collect(Collectors.toList());
+    }
+
+    public Boolean existsById(String customerId) {
+        return  repository.findById(customerId).isPresent();
+    }
+
+    public CustomerResponse findById(String customerId) {
+        return repository.findById(customerId).map(mapper::fromCustomer).orElseThrow(()->new CustomerNotFoundeException((format(" No customer found with the provide id %s ",customerId))));
+    }
+
+    public void deleteCustomer(String customerId) {
+        repository.deleteById(customerId);
     }
 }
